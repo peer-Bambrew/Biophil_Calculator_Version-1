@@ -40,6 +40,7 @@ const Calculator = () => {
     printing_coverage_percent: "0",
     quantity: "1000",
     sales_margin_percent: "0",
+    barcodes_per_bag: "0",
   });
   const [result, setResult] = useState(null);
 
@@ -79,6 +80,7 @@ const Calculator = () => {
         printing_coverage_percent: parseFloat(formData.printing_coverage_percent),
         quantity: parseInt(formData.quantity),
         sales_margin_percent: parseFloat(formData.sales_margin_percent),
+        barcodes_per_bag: parseInt(formData.barcodes_per_bag),
       };
 
       const response = await axios.post(`${API}/calculate`, payload);
@@ -358,6 +360,24 @@ const Calculator = () => {
                     </div>
                   </div>
 
+                  {/* Barcode Section */}
+                  <div className="space-y-2">
+                    <Label htmlFor="barcodes_per_bag">Variable Barcodes per Bag</Label>
+                    <Input
+                      id="barcodes_per_bag"
+                      type="number"
+                      min="0"
+                      max="10"
+                      placeholder="0"
+                      value={formData.barcodes_per_bag}
+                      onChange={(e) => handleInputChange("barcodes_per_bag", e.target.value)}
+                      data-testid="barcode-input"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Enter number of variable barcodes needed (₹0.08 per barcode)
+                    </p>
+                  </div>
+
                   <Button
                     type="submit"
                     disabled={loading}
@@ -441,9 +461,15 @@ const Calculator = () => {
                           <span className="font-medium">₹{result.printing_cost_per_bag.toFixed(2)}</span>
                         </div>
                       )}
+                      {result.barcode_cost_per_bag > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Barcode ({result.barcodes_per_bag})</span>
+                          <span className="font-medium">₹{result.barcode_cost_per_bag.toFixed(2)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Packaging</span>
-                        <span className="font-medium">₹{result.packaging_cost_per_bag.toFixed(2)}</span>
+                        <span className="text-slate-600">Packaging (Boxes)</span>
+                        <span className="font-medium">₹{result.corrugation_box_cost_per_bag.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-slate-600">Logistics</span>
