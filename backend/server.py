@@ -114,6 +114,7 @@ class CostCalculationInput(BaseModel):
     quantity: int = 1000
     sales_margin_percent: float = 0
     delivery_region: str = "South"
+    barcodes_per_bag: int = 0  # Number of variable barcodes per bag
     
     @field_validator('thickness_microns')
     def validate_thickness(cls, v):
@@ -157,6 +158,14 @@ class CostBreakdown(BaseModel):
     
     release_liner_cost_per_bag: float = 0
     release_liner_weight_kg: float = 0
+    
+    # Barcode costs
+    barcode_cost_per_bag: float = 0
+    barcodes_per_bag: int = 0
+    
+    # Packaging (Corrugation Box)
+    corrugation_box_cost_per_bag: float
+    corrugation_boxes_needed: float
     
     blown_film_cost_per_kg: float = 13.92
     blown_film_cost_per_bag: float
@@ -412,17 +421,33 @@ async def calculate_cost(input_data: CostCalculationInput):
         coverage_multiplier = input_data.printing_coverage_percent / 100
         printing_cost_per_bag = base_ink_cost * color_multiplier * coverage_multiplier * area_sq_m
     
-    # Packaging cost
+    # Barcode cost
+    barcode_cost = 0
+    if input_data.barcodes_per_bag > 0:
+        barcode_material = await db.bom_materials.find_one({"material_id": "variable_barcode"}, {"_id": 0})
+        if barcode_material:
+            barcode_cost = input_data.barcodes_per_bag * barcode_material['cost_per_kg']  # cost_per_kg stores per piece cost for barcodes
+    
+    # Packaging cost - Using Corrugation Boxes (12 kg capacity per box)
     total_order_weight = weight_with_wastage * input_data.quantity
-    if total_order_weight < 50:
-        packaging_cost_per_bag = settings.box_cost_small / input_data.quantity
-        packaging_weight_per_bag = settings.box_weight_small_kg / input_data.quantity
-    elif total_order_weight < 200:
-        packaging_cost_per_bag = settings.box_cost_medium / input_data.quantity
-        packaging_weight_per_bag = settings.box_weight_medium_kg / input_data.quantity
+    corrugation_box_material = await db.bom_materials.find_one({"material_id": "corrugation_box"}, {"_id": 0})
+    
+    if corrugation_box_material:
+        box_capacity_kg = 12.0  # Standard 12 kg per box
+        corrugation_boxes_needed = total_order_weight / box_capacity_kg
+        corrugation_box_cost_total = corrugation_boxes_needed * corrugation_box_material['cost_per_kg']  # cost_per_kg stores per piece cost for boxes
+        packaging_cost_per_bag = corrugation_box_cost_total / input_data.quantity
     else:
-        packaging_cost_per_bag = settings.box_cost_large / input_data.quantity
-        packaging_weight_per_bag = settings.box_weight_large_kg / input_data.quantity
+        # Fallback to old logic if BOM not found
+        corrugation_boxes_needed = 0
+        if total_order_weight < 50:
+            packaging_cost_per_bag = settings.box_cost_small / input_data.quantity
+        elif total_order_weight < 200:
+            packaging_cost_per_bag = settings.box_cost_medium / input_data.quantity
+        else:
+            packaging_cost_per_bag = settings.box_cost_large / input_data.quantity
+    
+    packaging_weight_per_bag = 0.5 / input_data.quantity  # Approximate box weight contribution
     
     # Logistics cost
     total_weight_with_packaging = total_order_weight + (packaging_weight_per_bag * input_data.quantity)
@@ -445,7 +470,7 @@ async def calculate_cost(input_data: CostCalculationInput):
     
     # Total costs
     total_material_cost = (material_cost_per_bag + seal_king_tape_cost + 
-                          hot_melt_cost + release_liner_cost)
+                          hot_melt_cost + release_liner_cost + barcode_cost)
     total_direct_cost = (total_material_cost + total_conversion_cost + 
                         printing_cost_per_bag + packaging_cost_per_bag + logistics_cost_per_bag)
     
@@ -477,6 +502,10 @@ async def calculate_cost(input_data: CostCalculationInput):
         hot_melt_weight_kg=hot_melt_weight,
         release_liner_cost_per_bag=release_liner_cost,
         release_liner_weight_kg=release_liner_weight,
+        barcode_cost_per_bag=barcode_cost,
+        barcodes_per_bag=input_data.barcodes_per_bag,
+        corrugation_box_cost_per_bag=packaging_cost_per_bag,
+        corrugation_boxes_needed=corrugation_boxes_needed if corrugation_box_material else 0,
         blown_film_cost_per_kg=blown_film_cost_per_kg,
         blown_film_cost_per_bag=blown_film_cost_per_bag,
         bag_making_cost_per_bag=bag_making_cost_per_bag,
@@ -563,6 +592,26 @@ async def startup_event():
                 "unit": "kg",
                 "description": "For Mailer Bags - protective liner",
                 "applicable_products": ["Mailer Bag"]
+            },
+            {
+                "material_id": "corrugation_box",
+                "material_name": "Corrugation Box",
+                "cost_per_kg": 40.0,
+                "gsm": 0,
+                "width_m": 0,
+                "unit": "piece",
+                "description": "Standard packing box - 12 kg capacity per box",
+                "applicable_products": ["All"]
+            },
+            {
+                "material_id": "variable_barcode",
+                "material_name": "Variable Barcode",
+                "cost_per_kg": 0.08,
+                "gsm": 0,
+                "width_m": 0,
+                "unit": "piece",
+                "description": "Variable barcode printing cost per piece",
+                "applicable_products": ["All"]
             }
         ]
         await db.bom_materials.insert_many(default_bom_materials)
