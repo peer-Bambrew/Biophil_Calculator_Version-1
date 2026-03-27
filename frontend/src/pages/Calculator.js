@@ -39,6 +39,7 @@ const Calculator = () => {
     num_colors: "0",
     printing_coverage_percent: "0",
     quantity: "1000",
+    sales_margin_percent: "0",
   });
   const [result, setResult] = useState(null);
 
@@ -77,7 +78,7 @@ const Calculator = () => {
         num_colors: parseInt(formData.num_colors),
         printing_coverage_percent: parseFloat(formData.printing_coverage_percent),
         quantity: parseInt(formData.quantity),
-        wastage_percent: parseFloat(formData.wastage_percent),
+        sales_margin_percent: parseFloat(formData.sales_margin_percent),
       };
 
       const response = await axios.post(`${API}/calculate`, payload);
@@ -324,7 +325,7 @@ const Calculator = () => {
                   </div>
 
                   {/* Additional Parameters */}
-                  <div className="grid sm:grid-cols-1 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="quantity">Quantity (pieces)</Label>
                       <Input
@@ -335,6 +336,25 @@ const Calculator = () => {
                         onChange={(e) => handleInputChange("quantity", e.target.value)}
                         data-testid="quantity-input"
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sales_margin_percent">Sales Margin (%)</Label>
+                      <Input
+                        id="sales_margin_percent"
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        placeholder="0"
+                        value={formData.sales_margin_percent}
+                        onChange={(e) =>
+                          handleInputChange("sales_margin_percent", e.target.value)
+                        }
+                        data-testid="sales-margin-input"
+                      />
+                      <p className="text-xs text-slate-500">
+                        Enter margin % to calculate selling price
+                      </p>
                     </div>
                   </div>
 
@@ -396,7 +416,7 @@ const Calculator = () => {
                         </div>
                         <div>
                           <p className="text-slate-500">Pieces/Kg</p>
-                          <p className="font-medium">{result.pieces_per_kg.toFixed(0)}</p>
+                          <p className="font-medium">{(result.pieces_per_kg_after_wastage || result.pieces_per_kg || 0).toFixed(0)}</p>
                         </div>
                       </div>
                     </div>
@@ -432,20 +452,23 @@ const Calculator = () => {
 
                       <div className="border-t pt-3 space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="font-semibold text-slate-700">Total Direct Cost</span>
-                          <span className="font-semibold">₹{result.total_direct_cost.toFixed(2)}</span>
+                          <span className="font-semibold text-slate-700">Total Direct Cost (Cost Price)</span>
+                          <span className="font-semibold text-slate-800">₹{result.total_direct_cost.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>Margin ({result.margin_percent}%)</span>
-                          <span>₹{(result.landed_cost_per_bag - result.total_direct_cost).toFixed(2)}</span>
-                        </div>
+                        {result.sales_margin_percent > 0 && (
+                          <div className="flex justify-between text-sm text-green-600">
+                            <span>Sales Margin ({result.sales_margin_percent}%)</span>
+                            <span>₹{result.sales_margin_amount.toFixed(2)}</span>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                      {/* Cost Price Display */}
+                      <div className="bg-slate-100 p-4 rounded-lg border border-slate-300">
                         <div className="flex justify-between items-center">
-                          <span className="font-bold text-slate-800">Landed Cost/Bag</span>
-                          <span className="text-2xl font-bold text-blue-700">
-                            ₹{result.landed_cost_per_bag.toFixed(2)}
+                          <span className="font-bold text-slate-800">Cost Price per Bag</span>
+                          <span className="text-2xl font-bold text-slate-700">
+                            ₹{result.total_direct_cost.toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center mt-2 text-sm">
@@ -456,13 +479,38 @@ const Calculator = () => {
                         </div>
                       </div>
 
-                      {formData.quantity && (
-                        <div className="bg-slate-50 p-3 rounded-lg border">
+                      {/* Selling Price Display (only if margin > 0) */}
+                      {result.sales_margin_percent > 0 && (
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-300">
                           <div className="flex justify-between items-center">
-                            <span className="text-sm text-slate-600">Total for {formData.quantity} pieces</span>
-                            <span className="text-lg font-bold text-slate-800">
-                              ₹{(result.landed_cost_per_bag * parseInt(formData.quantity)).toFixed(2)}
+                            <span className="font-bold text-slate-800">Selling Price per Bag</span>
+                            <span className="text-2xl font-bold text-green-700">
+                              ₹{result.selling_price_per_bag.toFixed(2)}
                             </span>
+                          </div>
+                          <div className="text-xs text-slate-600 mt-1">
+                            (Including {result.sales_margin_percent}% margin)
+                          </div>
+                        </div>
+                      )}
+
+                      {formData.quantity && (
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-slate-700">Total Cost ({formData.quantity} pcs)</span>
+                              <span className="text-lg font-bold text-slate-800">
+                                ₹{result.total_order_cost.toFixed(2)}
+                              </span>
+                            </div>
+                            {result.sales_margin_percent > 0 && (
+                              <div className="flex justify-between items-center pt-2 border-t border-blue-200">
+                                <span className="text-sm font-medium text-green-700">Total Selling Price ({formData.quantity} pcs)</span>
+                                <span className="text-lg font-bold text-green-700">
+                                  ₹{result.total_order_selling_price.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
