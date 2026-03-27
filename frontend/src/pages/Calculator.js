@@ -101,7 +101,7 @@ const Calculator = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-slate-800 mb-2">
-            Biodegradable Film Pouch Calculator
+            Biophil Product Film Pouch Calculator
           </h1>
           <p className="text-slate-600">
             Calculate accurate costs for your packaging products

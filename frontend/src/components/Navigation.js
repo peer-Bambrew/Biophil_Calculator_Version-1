@@ -18,7 +18,7 @@ const Navigation = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
               <Calculator className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-slate-800">BioPack Cost Calculator</h1>
+            <h1 className="text-xl font-bold text-slate-800">Biophil Product Cost Calculator</h1>
           </div>
           <div className="flex space-x-1">
             {navItems.map((item) => {
