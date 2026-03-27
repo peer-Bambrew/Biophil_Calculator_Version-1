@@ -48,15 +48,6 @@ class BlendCreate(BaseModel):
 class AdminSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
-    # Material Costs
-    seal_king_tape_per_meter: float = 0.13
-    hot_melt_cost_per_kg: float = 215.0
-    hot_melt_gsm: float = 130.0
-    hot_melt_width_m: float = 0.012
-    release_liner_cost_per_kg: float = 265.0
-    release_liner_gsm: float = 60.0
-    release_liner_width_m: float = 0.03
-    
     # Logistics Costs (per kg)
     ptl_cost_per_kg: float = 12.0
     ftl_north_cost_per_kg: float = 12.0
@@ -85,6 +76,28 @@ class AdminSettings(BaseModel):
     # Conversion Margins (internal)
     printing_conversion_margin: float = 30.0
     bag_making_conversion_margin: float = 30.0
+
+class BOMMaterial(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    material_id: str
+    material_name: str
+    cost_per_kg: float
+    gsm: float
+    width_m: float
+    unit: str = "kg"
+    description: Optional[str] = ""
+    applicable_products: List[str] = []
+
+class BOMMaterialCreate(BaseModel):
+    material_id: str
+    material_name: str
+    cost_per_kg: float
+    gsm: float
+    width_m: float
+    unit: str = "kg"
+    description: Optional[str] = ""
+    applicable_products: List[str] = []
 
 class CostCalculationInput(BaseModel):
     product_type: str
@@ -256,6 +269,50 @@ async def delete_blend(blend_number: int):
     return {"message": "Blend deleted successfully"}
 
 
+# BOM Material Management APIs
+@api_router.post("/bom-materials", response_model=BOMMaterial)
+async def create_bom_material(material: BOMMaterialCreate):
+    existing = await db.bom_materials.find_one({"material_id": material.material_id}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Material ID already exists")
+    
+    material_dict = material.model_dump()
+    await db.bom_materials.insert_one(material_dict)
+    return material
+
+@api_router.get("/bom-materials", response_model=List[BOMMaterial])
+async def get_all_bom_materials():
+    materials = await db.bom_materials.find({}, {"_id": 0}).sort("material_name", 1).to_list(100)
+    return materials
+
+@api_router.get("/bom-materials/{material_id}", response_model=BOMMaterial)
+async def get_bom_material(material_id: str):
+    material = await db.bom_materials.find_one({"material_id": material_id}, {"_id": 0})
+    if not material:
+        raise HTTPException(status_code=404, detail="Material not found")
+    return material
+
+@api_router.put("/bom-materials/{material_id}", response_model=BOMMaterial)
+async def update_bom_material(material_id: str, material: BOMMaterialCreate):
+    existing = await db.bom_materials.find_one({"material_id": material_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Material not found")
+    
+    material_dict = material.model_dump()
+    await db.bom_materials.update_one(
+        {"material_id": material_id},
+        {"$set": material_dict}
+    )
+    return material
+
+@api_router.delete("/bom-materials/{material_id}")
+async def delete_bom_material(material_id: str):
+    result = await db.bom_materials.delete_one({"material_id": material_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Material not found")
+    return {"message": "Material deleted successfully"}
+
+
 # Cost Calculation API
 @api_router.post("/calculate", response_model=CostBreakdown)
 async def calculate_cost(input_data: CostCalculationInput):
@@ -304,8 +361,12 @@ async def calculate_cost(input_data: CostCalculationInput):
     seal_king_tape_cost = 0
     seal_king_tape_length = 0
     if input_data.product_type == "Garment Bag":
-        seal_king_tape_length = width_m
-        seal_king_tape_cost = seal_king_tape_length * settings.seal_king_tape_per_meter
+        seal_king_material = await db.bom_materials.find_one({"material_id": "seal_king_tape"}, {"_id": 0})
+        if seal_king_material:
+            seal_king_tape_length = width_m
+            # Calculate cost: length × cost per meter
+            cost_per_meter = seal_king_material['cost_per_kg'] / 1000  # Assuming cost stored as per kg, convert to per meter
+            seal_king_tape_cost = seal_king_tape_length * cost_per_meter
     
     # Hot Melt and Release Liner (for Mailer Bags)
     hot_melt_cost = 0
@@ -315,14 +376,18 @@ async def calculate_cost(input_data: CostCalculationInput):
     
     if input_data.product_type == "Mailer Bag":
         # Hot melt calculation
-        hot_melt_area = settings.hot_melt_width_m * width_m
-        hot_melt_weight = (hot_melt_area * settings.hot_melt_gsm) / 1000
-        hot_melt_cost = hot_melt_weight * settings.hot_melt_cost_per_kg
+        hot_melt_material = await db.bom_materials.find_one({"material_id": "hot_melt"}, {"_id": 0})
+        if hot_melt_material:
+            hot_melt_area = hot_melt_material['width_m'] * width_m
+            hot_melt_weight = (hot_melt_area * hot_melt_material['gsm']) / 1000
+            hot_melt_cost = hot_melt_weight * hot_melt_material['cost_per_kg']
         
         # Release liner calculation
-        release_liner_area = settings.release_liner_width_m * width_m
-        release_liner_weight = (release_liner_area * settings.release_liner_gsm) / 1000
-        release_liner_cost = release_liner_weight * settings.release_liner_cost_per_kg
+        release_liner_material = await db.bom_materials.find_one({"material_id": "release_liner"}, {"_id": 0})
+        if release_liner_material:
+            release_liner_area = release_liner_material['width_m'] * width_m
+            release_liner_weight = (release_liner_area * release_liner_material['gsm']) / 1000
+            release_liner_cost = release_liner_weight * release_liner_material['cost_per_kg']
     
     # Conversion costs
     blown_film_cost_per_kg = 13.92
@@ -464,6 +529,44 @@ async def startup_event():
         settings_dict["_id"] = "admin_settings"
         await db.settings.insert_one(settings_dict)
         logger.info("Initialized default admin settings")
+    
+    # Initialize default BOM materials if not exist
+    bom_count = await db.bom_materials.count_documents({})
+    if bom_count == 0:
+        default_bom_materials = [
+            {
+                "material_id": "seal_king_tape",
+                "material_name": "Seal King Tape",
+                "cost_per_kg": 130.0,  # ₹0.13 per meter = ₹130 per kg (approx)
+                "gsm": 0,
+                "width_m": 0.012,
+                "unit": "meter",
+                "description": "For Garment Bags - sealing tape across width",
+                "applicable_products": ["Garment Bag"]
+            },
+            {
+                "material_id": "hot_melt",
+                "material_name": "Hot Melt Adhesive",
+                "cost_per_kg": 215.0,
+                "gsm": 130.0,
+                "width_m": 0.012,
+                "unit": "kg",
+                "description": "For Mailer Bags - adhesive layer",
+                "applicable_products": ["Mailer Bag"]
+            },
+            {
+                "material_id": "release_liner",
+                "material_name": "Release Liner",
+                "cost_per_kg": 265.0,
+                "gsm": 60.0,
+                "width_m": 0.03,
+                "unit": "kg",
+                "description": "For Mailer Bags - protective liner",
+                "applicable_products": ["Mailer Bag"]
+            }
+        ]
+        await db.bom_materials.insert_many(default_bom_materials)
+        logger.info("Initialized default BOM materials")
 
 
 app.include_router(api_router)
