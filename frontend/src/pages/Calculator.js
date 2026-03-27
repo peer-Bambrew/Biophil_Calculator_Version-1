@@ -144,12 +144,12 @@ const Calculator = () => {
                   {/* Dimensions */}
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="height">Height (cm) *</Label>
+                      <Label htmlFor="height">Height (inches) *</Label>
                       <Input
                         id="height"
                         type="number"
                         step="0.01"
-                        placeholder="17.30"
+                        placeholder="32.00"
                         value={formData.height}
                         onChange={(e) => handleInputChange("height", e.target.value)}
                         required
@@ -157,12 +157,12 @@ const Calculator = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="width">Width (cm) *</Label>
+                      <Label htmlFor="width">Width (inches) *</Label>
                       <Input
                         id="width"
                         type="number"
                         step="0.01"
-                        placeholder="12.60"
+                        placeholder="24.00"
                         value={formData.width}
                         onChange={(e) => handleInputChange("width", e.target.value)}
                         required
@@ -170,7 +170,7 @@ const Calculator = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="flap">Flap (cm)</Label>
+                      <Label htmlFor="flap">Flap (inches)</Label>
                       <Input
                         id="flap"
                         type="number"
@@ -184,8 +184,8 @@ const Calculator = () => {
                     <div className="space-y-2">
                       <Label htmlFor="gusset">
                         {formData.product_type === "Bottom Seal Pouch"
-                          ? "Side Gusset (cm)"
-                          : "Bottom Gusset (cm)"}
+                          ? "Side Gusset (inches)"
+                          : "Bottom Gusset (inches)"}
                       </Label>
                       <Input
                         id="gusset"

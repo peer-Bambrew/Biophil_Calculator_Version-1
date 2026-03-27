@@ -111,19 +111,19 @@ const History = () => {
                         <div className="flex justify-between">
                           <span className="text-slate-500">Dimensions:</span>
                           <span className="font-medium">
-                            {calc.calculation_input.height} × {calc.calculation_input.width} cm
+                            {calc.calculation_input.height} × {calc.calculation_input.width} in
                           </span>
                         </div>
                         {calc.calculation_input.flap > 0 && (
                           <div className="flex justify-between">
                             <span className="text-slate-500">Flap:</span>
-                            <span className="font-medium">{calc.calculation_input.flap} cm</span>
+                            <span className="font-medium">{calc.calculation_input.flap} in</span>
                           </div>
                         )}
                         {calc.calculation_input.gusset > 0 && (
                           <div className="flex justify-between">
                             <span className="text-slate-500">Gusset:</span>
-                            <span className="font-medium">{calc.calculation_input.gusset} cm</span>
+                            <span className="font-medium">{calc.calculation_input.gusset} in</span>
                           </div>
                         )}
                         <div className="flex justify-between">

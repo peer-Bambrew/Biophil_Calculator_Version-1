@@ -49,7 +49,7 @@ class CostCalculationInput(BaseModel):
     # Product Type
     product_type: str  # "Side Seal Pouch", "Bottom Seal Pouch", "Garment Bag", "Mailer Bag"
     
-    # Dimensions (in cm)
+    # Dimensions (in inches)
     height: float
     width: float
     flap: float = 0
@@ -167,11 +167,11 @@ async def calculate_cost(input_data: CostCalculationInput):
     if not blend:
         raise HTTPException(status_code=404, detail=f"Blend {input_data.blend_number} not found")
     
-    # Convert dimensions from cm to meters
-    height_m = input_data.height / 100
-    width_m = input_data.width / 100
-    flap_m = input_data.flap / 100
-    gusset_m = input_data.gusset / 100
+    # Convert dimensions from inches to meters (1 inch = 0.0254 meters)
+    height_m = input_data.height * 0.0254
+    width_m = input_data.width * 0.0254
+    flap_m = input_data.flap * 0.0254
+    gusset_m = input_data.gusset * 0.0254
     
     # Calculate open dimensions based on product type
     if input_data.product_type in ["Side Seal Pouch", "Garment Bag", "Mailer Bag"]:
