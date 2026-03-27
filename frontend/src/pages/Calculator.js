@@ -39,7 +39,6 @@ const Calculator = () => {
     num_colors: "0",
     printing_coverage_percent: "0",
     quantity: "1000",
-    wastage_percent: "5.5",
   });
   const [result, setResult] = useState(null);
 
@@ -325,7 +324,7 @@ const Calculator = () => {
                   </div>
 
                   {/* Additional Parameters */}
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="quantity">Quantity (pieces)</Label>
                       <Input
@@ -335,21 +334,6 @@ const Calculator = () => {
                         value={formData.quantity}
                         onChange={(e) => handleInputChange("quantity", e.target.value)}
                         data-testid="quantity-input"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="wastage_percent">Wastage (%)</Label>
-                      <Input
-                        id="wastage_percent"
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="100"
-                        value={formData.wastage_percent}
-                        onChange={(e) =>
-                          handleInputChange("wastage_percent", e.target.value)
-                        }
-                        data-testid="wastage-input"
                       />
                     </div>
                   </div>
