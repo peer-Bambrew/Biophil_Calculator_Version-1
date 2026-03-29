@@ -443,48 +443,97 @@ const Calculator = () => {
 
                     {/* Cost Details */}
                     <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Material Cost</span>
-                        <span className="font-medium">₹{result.total_material_cost.toFixed(2)}</span>
+                      <h4 className="font-semibold text-sm text-slate-700 mb-3">Cost Breakdown</h4>
+                      
+                      {/* Table Header */}
+                      <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-500 border-b pb-2">
+                        <span>Item</span>
+                        <span className="text-right">Per Bag</span>
+                        <span className="text-right">Per Kg</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Blown Film Conv.</span>
-                        <span className="font-medium">₹{result.blown_film_cost_per_bag.toFixed(2)}</span>
+                      
+                      {/* Material Cost */}
+                      <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                        <span className="text-slate-700">Material Cost</span>
+                        <span className="font-medium text-right">₹{result.total_material_cost.toFixed(2)}</span>
+                        <span className="font-medium text-right text-slate-600">
+                          ₹{(result.total_material_cost / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                        </span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Bag Making</span>
-                        <span className="font-medium">₹{result.bag_making_cost_per_bag.toFixed(2)}</span>
+                      
+                      {/* Blown Film Conversion */}
+                      <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                        <span className="text-slate-700">Blown Film Conv.</span>
+                        <span className="font-medium text-right">₹{result.blown_film_cost_per_bag.toFixed(2)}</span>
+                        <span className="font-medium text-right text-slate-600">
+                          ₹{(result.blown_film_cost_per_bag / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                        </span>
                       </div>
+                      
+                      {/* Bag Making */}
+                      <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                        <span className="text-slate-700">Bag Making</span>
+                        <span className="font-medium text-right">₹{result.bag_making_cost_per_bag.toFixed(2)}</span>
+                        <span className="font-medium text-right text-slate-600">
+                          ₹{(result.bag_making_cost_per_bag / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                        </span>
+                      </div>
+                      
+                      {/* Printing */}
                       {result.printing_cost_per_bag > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Printing</span>
-                          <span className="font-medium">₹{result.printing_cost_per_bag.toFixed(2)}</span>
+                        <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                          <span className="text-slate-700">Printing</span>
+                          <span className="font-medium text-right">₹{result.printing_cost_per_bag.toFixed(2)}</span>
+                          <span className="font-medium text-right text-slate-600">
+                            ₹{(result.printing_cost_per_bag / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                          </span>
                         </div>
                       )}
+                      
+                      {/* Barcode */}
                       {result.barcode_cost_per_bag > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-slate-600">Barcode ({result.barcodes_per_bag})</span>
-                          <span className="font-medium">₹{result.barcode_cost_per_bag.toFixed(2)}</span>
+                        <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                          <span className="text-slate-700">Barcode ({result.barcodes_per_bag})</span>
+                          <span className="font-medium text-right">₹{result.barcode_cost_per_bag.toFixed(2)}</span>
+                          <span className="font-medium text-right text-slate-600">
+                            ₹{(result.barcode_cost_per_bag / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                          </span>
                         </div>
                       )}
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Packaging (Boxes)</span>
-                        <span className="font-medium">₹{result.corrugation_box_cost_per_bag.toFixed(2)}</span>
+                      
+                      {/* Packaging */}
+                      <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                        <span className="text-slate-700">Packaging (Boxes)</span>
+                        <span className="font-medium text-right">₹{result.corrugation_box_cost_per_bag.toFixed(2)}</span>
+                        <span className="font-medium text-right text-slate-600">
+                          ₹{(result.corrugation_box_cost_per_bag / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                        </span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-600">Logistics</span>
-                        <span className="font-medium">₹{result.logistics_cost_per_bag.toFixed(2)}</span>
+                      
+                      {/* Logistics */}
+                      <div className="grid grid-cols-3 gap-2 text-sm items-center">
+                        <span className="text-slate-700">Logistics</span>
+                        <span className="font-medium text-right">₹{result.logistics_cost_per_bag.toFixed(2)}</span>
+                        <span className="font-medium text-right text-slate-600">
+                          ₹{(result.logistics_cost_per_bag / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                        </span>
                       </div>
 
-                      <div className="border-t pt-3 space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-semibold text-slate-700">Total Direct Cost (Cost Price)</span>
-                          <span className="font-semibold text-slate-800">₹{result.total_direct_cost.toFixed(2)}</span>
+                      <div className="border-t pt-3 mt-3">
+                        <div className="grid grid-cols-3 gap-2 text-sm font-semibold items-center">
+                          <span className="text-slate-800">Total Direct Cost</span>
+                          <span className="text-right">₹{result.total_direct_cost.toFixed(2)}</span>
+                          <span className="text-right text-slate-700">
+                            ₹{result.cost_per_kg.toFixed(2)}
+                          </span>
                         </div>
                         {result.sales_margin_percent > 0 && (
-                          <div className="flex justify-between text-sm text-green-600">
+                          <div className="grid grid-cols-3 gap-2 text-sm text-green-600 mt-2">
                             <span>Sales Margin ({result.sales_margin_percent}%)</span>
-                            <span>₹{result.sales_margin_amount.toFixed(2)}</span>
+                            <span className="text-right">₹{result.sales_margin_amount.toFixed(2)}</span>
+                            <span className="text-right">
+                              ₹{(result.sales_margin_amount / result.weight_per_bag_with_wastage_kg).toFixed(2)}
+                            </span>
                           </div>
                         )}
                       </div>
