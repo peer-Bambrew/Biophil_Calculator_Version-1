@@ -94,4 +94,9 @@
    "engines": {
     "node": "18.x"
   }
+  {
+  "dependencies": {
+    "lodash": "4.17.21"
+  }
+}
 }
